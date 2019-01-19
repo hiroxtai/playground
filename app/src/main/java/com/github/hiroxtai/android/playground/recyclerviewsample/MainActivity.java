@@ -1,10 +1,17 @@
 package com.github.hiroxtai.android.playground.recyclerviewsample;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewCompat;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,8 +29,35 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         RecyclerView recyclerView =
                 (RecyclerView) findViewById(R.id.recycler_view);
+
+        // RecyclerView 自体のレイアウトサイズが変わらない場合、
+        // パフォーマンスのために設定しておいた方がよい
         recyclerView.setHasFixedSize(true);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+
+        final int offset = (int) (8 * getResources().getDisplayMetrics().density);
+        recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
+
+            // 第1引数のRectに上下左右のオフセットを指定
+            @Override
+            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view,
+                    @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+
+                // アイテム間のオフセットが2つ分になってしまうので、
+                // View の位置によってオフセット値を変える
+                int position =
+                        ((RecyclerView.LayoutParams) view.getLayoutParams()).getViewLayoutPosition();
+
+                // 上下左右にオフセットを入れる場合
+                if (position == 0) {
+                    outRect.set(offset, offset, offset, offset);
+                } else {
+                    outRect.set(offset, 0, offset, offset);
+                }
+            }
+        });
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this,
+                RecyclerView.VERTICAL, false);
         recyclerView.setLayoutManager(layoutManager);
         List<String> data = new ArrayList<>();
         for (int i = 0; i < 30; i++) {
@@ -41,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
         public ViewHolder(View itemView) {
             super(itemView);
             textView = (TextView) itemView.findViewById(android.R.id.text1);
+            textView.setBackgroundColor(Color.LTGRAY);
         }
     }
 
