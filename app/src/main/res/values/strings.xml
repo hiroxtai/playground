@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">002_FragmentSample</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_hoge_fragment">Hello hoge fragment</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_fuga_fragment">Hello fuga fragment</string>
+</resources>
