@@ -34,8 +34,47 @@ public class MainActivity extends AppCompatActivity {
         // パフォーマンスのために設定しておいた方がよい
         recyclerView.setHasFixedSize(true);
 
-        final int offset = (int) (8 * getResources().getDisplayMetrics().density);
+        final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(Color.GRAY);
+        final int dividerHeight = (int) (4 * getResources().getDisplayMetrics().density);
         recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
+
+            // RecyclerView のアイテムが描画される前に呼ばれる
+            @Override
+            public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent,
+                    @NonNull RecyclerView.State state) {
+                super.onDraw(c, parent, state);
+                // アイテムのビューより上に描画される
+            }
+
+            // アイテムが描画されたあとに呼ばれる
+            @Override
+            public void onDrawOver(@NonNull Canvas c, @NonNull RecyclerView parent,
+                    @NonNull RecyclerView.State state) {
+                super.onDrawOver(c, parent, state);
+                // アイテムのビューより下に描画される
+
+                final RecyclerView.LayoutManager manager = parent.getLayoutManager();
+                final int left = parent.getPaddingLeft();
+                final int right = parent.getWidth() - parent.getPaddingRight();
+                final int childCount = parent.getChildCount();
+                for (int i = 1; i < childCount; i++) {
+                    final View child = parent.getChildAt(i);
+                    final RecyclerView.LayoutParams params =
+                            (RecyclerView.LayoutParams) child.getLayoutParams();
+                    if (params.getViewLayoutPosition() == 0) {
+                        continue;
+                    }
+
+                    // ViewCompat.getTranslationY() を入れないと
+                    // 追加・削除のアニメーション時の位置が変になる
+                    final int top = manager.getDecoratedTop(child)
+                            - params.topMargin
+                            + Math.round(ViewCompat.getTranslationY(child));
+                    final int bottom = top + dividerHeight;
+                    c.drawRect(left, top, right, bottom, paint);
+                }
+            }
 
             // 第1引数のRectに上下左右のオフセットを指定
             @Override
@@ -47,12 +86,9 @@ public class MainActivity extends AppCompatActivity {
                 int position =
                         ((RecyclerView.LayoutParams) view.getLayoutParams()).getViewLayoutPosition();
 
-                // 上下左右にオフセットを入れる場合
-                if (position == 0) {
-                    outRect.set(offset, offset, offset, offset);
-                } else {
-                    outRect.set(offset, 0, offset, offset);
-                }
+                // 単に区切り線を入れる場合
+                int top = position == 0 ? 0 : dividerHeight;
+                outRect.set(0, top, 0, 0);
             }
         });
 
