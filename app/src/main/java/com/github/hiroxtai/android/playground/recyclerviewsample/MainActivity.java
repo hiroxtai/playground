@@ -13,10 +13,12 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -100,8 +102,35 @@ public class MainActivity extends AppCompatActivity {
             data.add("Item : " + i);
         }
 
+        // selectableItemBackground に指定されているリソースID の値を取得しておく
+        TypedValue val = new TypedValue();
+        if (getTheme() != null) {
+            getTheme().resolveAttribute(
+                    android.R.attr.selectableItemBackground, val, true);
+        }
+        final int backgroundResId = val.resourceId;
+
+        // 表示するデータとアイテムのView をRecyclerView に紐付け
+        final SimpleAdapter adapter = new SimpleAdapter(this, data) {
+            @Override
+            public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                final ViewHolder viewHolder
+                        = super.onCreateViewHolder(parent, viewType);
+                viewHolder.itemView.setBackgroundResource(backgroundResId);
+                viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        int position = viewHolder.getAdapterPosition();
+                        Toast.makeText(v.getContext(), "clicked " + position,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return viewHolder;
+            }
+        };
+
         // 表示するデータとアイテムの View を RecyclerView に紐付け
-        recyclerView.setAdapter(new SimpleAdapter(this, data));
+        recyclerView.setAdapter(adapter);
     }
 
     private static class ViewHolder extends RecyclerView.ViewHolder {
@@ -115,8 +144,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private static class SimpleAdapter extends
-            RecyclerView.Adapter<ViewHolder> {
+    private static class SimpleAdapter extends RecyclerView.Adapter<ViewHolder> {
         private final LayoutInflater inflater;
         private final List<String> data;
 
