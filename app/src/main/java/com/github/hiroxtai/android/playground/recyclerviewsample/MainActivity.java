@@ -23,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -138,18 +139,35 @@ public class MainActivity extends AppCompatActivity {
 //        // 表示するデータとアイテムの View を RecyclerView に紐付け
 //        recyclerView.setAdapter(adapter);
 
-        ImageView header = new ImageView(this);
-        header.setLayoutParams(new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 200));
-        header.setBackgroundColor(Color.RED);
-        ImageView footer = new ImageView(this);
-        footer.setLayoutParams(new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 200));
-        footer.setBackgroundColor(Color.BLUE);
+//        // ヘッダー、フッターあり
+//        ImageView header = new ImageView(this);
+//        header.setLayoutParams(new ViewGroup.LayoutParams(
+//                ViewGroup.LayoutParams.MATCH_PARENT, 200));
+//        header.setBackgroundColor(Color.RED);
+//        ImageView footer = new ImageView(this);
+//        footer.setLayoutParams(new ViewGroup.LayoutParams(
+//                ViewGroup.LayoutParams.MATCH_PARENT, 200));
+//        footer.setBackgroundColor(Color.BLUE);
+//
+//        // 表示するデータとアイテムの View を RecyclerView に紐付け
+//        final SimpleAdapter2 adapter =
+//                new SimpleAdapter2(this, header, footer, data);
+//        recyclerView.setAdapter(adapter);
 
         // 表示するデータとアイテムの View を RecyclerView に紐付け
-        final SimpleAdapter2 adapter =
-                new SimpleAdapter2(this, header, footer, data);
+        final SimpleAdapter3 adapter = new SimpleAdapter3(this, data) {
+            @Override
+            public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                final ViewHolder viewHolder
+                        = super.onCreateViewHolder(parent, viewType);
+                viewHolder.itemView.setBackgroundResource(backgroundResId);
+                viewHolder.itemView.setOnClickListener(v -> {
+                    int position = viewHolder.getAdapterPosition();
+                    remove(position);
+                });
+                return viewHolder;
+            }
+        };
         recyclerView.setAdapter(adapter);
     }
 
@@ -296,6 +314,90 @@ public class MainActivity extends AppCompatActivity {
                 return ITEM_VIEW_TYPE_ITEM;
             }
             return ITEM_VIEW_TYPE_FOOTER;
+        }
+    }
+
+    private static class SimpleAdapter3 extends RecyclerArrayAdapter<String, ViewHolder> {
+        private final LayoutInflater inflater;
+        private final List<String> data;
+
+        public SimpleAdapter3(Context context, List<String> data) {
+            super(data);
+            this.inflater = LayoutInflater.from(context);
+            this.data = data;
+        }
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return new ViewHolder(
+                    inflater.inflate(ViewHolder.LAYOUT_ID, parent, false));
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            String text = data.get(position);
+            holder.textView.setText(text);
+        }
+
+        @Override
+        public int getItemCount() {
+            return data.size();
+        }
+    }
+
+    private static abstract class RecyclerArrayAdapter<T, VH extends RecyclerView.ViewHolder>
+            extends RecyclerView.Adapter<VH> {
+        private final Object lock = new Object();
+        private final List<T> objects;
+
+        public RecyclerArrayAdapter() {
+            this(new ArrayList<T>());
+        }
+
+        public RecyclerArrayAdapter(List<T> objects) {
+            this.objects = objects;
+        }
+
+        public void add(@NonNull T object) {
+            final int position = objects.size();
+            synchronized (lock) {
+                objects.add(object);
+            }
+            notifyItemInserted(position);
+        }
+
+        public void addAll(@NonNull Collection<? extends T> collection) {
+            final int itemCount = collection.size();
+            final int positionStart = objects.size();
+            synchronized (lock) {
+                objects.addAll(collection);
+            }
+            notifyItemRangeInserted(positionStart, itemCount);
+        }
+
+        public void remove(@NonNull T object) {
+            int position = objects.indexOf(object);
+            synchronized (lock) {
+                objects.remove(object);
+            }
+            notifyItemRemoved(position);
+        }
+
+        public T remove(int position) {
+            T prev;
+            synchronized (lock) {
+                prev = objects.remove(position);
+            }
+            notifyItemRemoved(position);
+            return prev;
+        }
+
+        public void move(int from, int to) {
+            synchronized (lock) {
+                T prev = objects.remove(from);
+                objects.add(to > from ? to - 1 : to, prev);
+            }
+            notifyItemMoved(from, to);
         }
     }
 }
