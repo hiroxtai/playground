@@ -171,14 +171,35 @@ public class MainActivity extends AppCompatActivity {
         };
         recyclerView.setAdapter(adapter);
 
-        // スワイプによる削除
+        // スワイプによる削除とドラッグによる移動
+        int dragDirs = ItemTouchHelper.UP | ItemTouchHelper.DOWN;
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(
-                new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+                new ItemTouchHelper.SimpleCallback(dragDirs, ItemTouchHelper.RIGHT) {
+                    // ドラッグ中の色を変える
+                    @Override
+                    public void onSelectedChanged(RecyclerView.ViewHolder viewHolder,
+                            int actionState) {
+                        if (actionState != ItemTouchHelper.ACTION_STATE_IDLE) {
+                            viewHolder.itemView.setBackgroundColor(Color.LTGRAY);
+                        }
+                        super.onSelectedChanged(viewHolder, actionState);
+                    }
+
+                    @Override
+                    public void clearView(RecyclerView recyclerView,
+                            RecyclerView.ViewHolder viewHolder) {
+                        super.clearView(recyclerView, viewHolder);
+                        viewHolder.itemView.setBackgroundColor(Color.TRANSPARENT);
+                    }
+
                     @Override
                     public boolean onMove(RecyclerView recyclerView,
                             RecyclerView.ViewHolder viewHolder,
                             RecyclerView.ViewHolder target) {
-                        return false;
+                        int from = viewHolder.getAdapterPosition();
+                        int to = target.getAdapterPosition();
+                        adapter.move(from, to);
+                        return true;
                     }
 
                     @Override
