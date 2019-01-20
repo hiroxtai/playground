@@ -3,6 +3,7 @@ package com.github.hiroxtai.android.playground.recyclerviewsample;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.ViewCompat;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -17,6 +18,7 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,6 +37,10 @@ public class MainActivity extends AppCompatActivity {
         // RecyclerView 自体のレイアウトサイズが変わらない場合、
         // パフォーマンスのために設定しておいた方がよい
         recyclerView.setHasFixedSize(true);
+
+        // Adapter でアイテムが変更（追加・削除など）されたときのアニメーションを指定
+        RecyclerView.ItemAnimator itemAnimator = new DefaultItemAnimator();
+        recyclerView.setItemAnimator(itemAnimator);
 
         final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(Color.GRAY);
@@ -110,26 +116,40 @@ public class MainActivity extends AppCompatActivity {
         }
         final int backgroundResId = val.resourceId;
 
-        // 表示するデータとアイテムのView をRecyclerView に紐付け
-        final SimpleAdapter adapter = new SimpleAdapter(this, data) {
-            @Override
-            public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-                final ViewHolder viewHolder
-                        = super.onCreateViewHolder(parent, viewType);
-                viewHolder.itemView.setBackgroundResource(backgroundResId);
-                viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        int position = viewHolder.getAdapterPosition();
-                        Toast.makeText(v.getContext(), "clicked " + position,
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
-                return viewHolder;
-            }
-        };
+//        // 表示するデータとアイテムのView をRecyclerView に紐付け
+//        final SimpleAdapter adapter = new SimpleAdapter(this, data) {
+//            @Override
+//            public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+//                final ViewHolder viewHolder
+//                        = super.onCreateViewHolder(parent, viewType);
+//                viewHolder.itemView.setBackgroundResource(backgroundResId);
+//                viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+//                    @Override
+//                    public void onClick(View v) {
+//                        int position = viewHolder.getAdapterPosition();
+//                        Toast.makeText(v.getContext(), "clicked " + position,
+//                                Toast.LENGTH_SHORT).show();
+//                    }
+//                });
+//                return viewHolder;
+//            }
+//        };
+//
+//        // 表示するデータとアイテムの View を RecyclerView に紐付け
+//        recyclerView.setAdapter(adapter);
+
+        ImageView header = new ImageView(this);
+        header.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 200));
+        header.setBackgroundColor(Color.RED);
+        ImageView footer = new ImageView(this);
+        footer.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 200));
+        footer.setBackgroundColor(Color.BLUE);
 
         // 表示するデータとアイテムの View を RecyclerView に紐付け
+        final SimpleAdapter2 adapter =
+                new SimpleAdapter2(this, header, footer, data);
         recyclerView.setAdapter(adapter);
     }
 
@@ -168,6 +188,114 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public int getItemCount() {
             return data.size();
+        }
+    }
+
+    private static class SimpleAdapter2 extends HeaderViewListAdapter<ViewHolder> {
+        private final LayoutInflater inflater;
+        private final List<String> data;
+
+        public SimpleAdapter2(Context context, View headerView, View footerView,
+                List<String> data) {
+            super(headerView, footerView);
+            this.inflater = LayoutInflater.from(context);
+            this.data = data;
+        }
+
+        @Override
+        protected ViewHolder onCreateItemViewHolder(ViewGroup parent) {
+            return new ViewHolder(
+                    inflater.inflate(ViewHolder.LAYOUT_ID, parent, false));
+        }
+
+        @Override
+        protected void onBindItemViewHolder(ViewHolder holder, int position) {
+            String text = data.get(position);
+            holder.textView.setText(text);
+        }
+
+        @Override
+        protected int getAdapterItemCount() {
+            return data.size();
+        }
+    }
+
+    private static abstract class HeaderViewListAdapter<VH extends RecyclerView.ViewHolder>
+            extends RecyclerView.Adapter {
+        protected abstract VH onCreateItemViewHolder(ViewGroup parent);
+
+        protected abstract void onBindItemViewHolder(VH holder, int position);
+
+        protected abstract int getAdapterItemCount();
+
+        private static class HeaderFooterHolder extends RecyclerView.ViewHolder {
+            public HeaderFooterHolder(View itemView) {
+                super(itemView);
+            }
+        }
+
+        public static final int ITEM_VIEW_TYPE_ITEM = 0;
+        // ヘッダー用
+        public static final int ITEM_VIEW_TYPE_HEADER = 1;
+        // フッター用
+        public static final int ITEM_VIEW_TYPE_FOOTER = 2;
+        private final View headerView;
+
+        private final View footerView;
+
+        public HeaderViewListAdapter(View headerView, View footerView) {
+            this.headerView = headerView;
+            this.footerView = footerView;
+        }
+
+        @Override
+        public final RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent,
+                int viewType) {
+            switch (viewType) {
+                case ITEM_VIEW_TYPE_HEADER:
+                    return new HeaderFooterHolder(headerView);
+                case ITEM_VIEW_TYPE_FOOTER:
+                    return new HeaderFooterHolder(footerView);
+                case ITEM_VIEW_TYPE_ITEM:
+                    return onCreateItemViewHolder(parent);
+            }
+            return null;
+        }
+
+        @Override
+        public final void onBindViewHolder(RecyclerView.ViewHolder holder,
+                int position) {
+            if (holder.getItemViewType() == ITEM_VIEW_TYPE_ITEM) {
+                onBindItemViewHolder((VH) holder, position - getHeadersCount());
+            }
+        }
+
+        private int getHeadersCount() {
+            return headerView != null ? 1 : 0;
+        }
+
+        private int getFootersCount() {
+            return footerView != null ? 1 : 0;
+        }
+
+        @Override
+        public final int getItemCount() {
+            return getHeadersCount() + getFootersCount() + getAdapterItemCount();
+        }
+
+        // Positionに対応するViewTypeを返す
+        @Override
+        public final int getItemViewType(int position) {
+            int numHeaders = getHeadersCount();
+            if (position < numHeaders) {
+                return ITEM_VIEW_TYPE_HEADER;
+            }
+            int adjPosition = position - numHeaders;
+            int adapterCount = getAdapterItemCount();
+            if (adjPosition < adapterCount) {
+                return ITEM_VIEW_TYPE_ITEM;
+            }
+            return ITEM_VIEW_TYPE_FOOTER;
         }
     }
 }
